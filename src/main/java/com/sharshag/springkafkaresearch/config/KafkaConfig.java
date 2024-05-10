@@ -9,7 +9,7 @@ import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
+import org.springframework.data.transaction.ChainedTransactionManager;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
@@ -19,6 +19,9 @@ import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 import org.springframework.kafka.support.serializer.JsonSerializer;
 import org.springframework.kafka.transaction.KafkaTransactionManager;
+import org.springframework.orm.jpa.JpaTransactionManager;
+
+import jakarta.persistence.EntityManagerFactory;
 
 @Configuration
 public class KafkaConfig {
@@ -62,8 +65,13 @@ public class KafkaConfig {
     }
 
     @Bean
-    @Primary
-    public KafkaTransactionManager kafkaTransactionManager() {
-        return new KafkaTransactionManager(producerFactory());
+    public JpaTransactionManager transactionManager(EntityManagerFactory entityManagerFactory) {
+        return new JpaTransactionManager(entityManagerFactory);
+    }
+
+    @Bean
+    public ChainedTransactionManager chainedTransactionManager(JpaTransactionManager jpaTransactionManager,
+            KafkaTransactionManager<String, Object> kafkaTransactionManager) {
+        return new ChainedTransactionManager(jpaTransactionManager, kafkaTransactionManager);
     }
 }
